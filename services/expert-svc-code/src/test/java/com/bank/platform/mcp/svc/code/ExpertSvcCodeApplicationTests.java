@@ -7,13 +7,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Boots the full Spring context offline (no model configured ⇒ the fallback client)
@@ -29,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         // Force the unconfigured-model path regardless of any local .env.
         "platform.expert.vertex.base-url="
 })
+@AutoConfigureMockMvc
 class ExpertSvcCodeApplicationTests {
 
     @Autowired
@@ -36,6 +42,9 @@ class ExpertSvcCodeApplicationTests {
 
     @Autowired
     CodeExpertTools codeExpertTools;
+
+    @Autowired
+    MockMvc mockMvc;
 
     @Test
     void registersCodeReviewExpertAsAnMcpTool() {
@@ -63,5 +72,16 @@ class ExpertSvcCodeApplicationTests {
         assertThat(result.tool()).isEqualTo("code_review_expert");
         assertThat(result.status()).isEqualTo(Status.ERROR);
         assertThat(result.limitations()).anyMatch(s -> s.toLowerCase().contains("no model is configured"));
+    }
+
+    @Test
+    void usageEndpointReturnsJsonReport() throws Exception {
+        // A prior tool call records usage; the endpoint exposes the aggregated report.
+        codeExpertTools.codeReviewExpert("diff --git a/A.java b/A.java\n+ // x", null, null);
+
+        mockMvc.perform(get("/api/usage"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totals.calls").exists())
+                .andExpect(jsonPath("$.tools[*].tool").value(org.hamcrest.Matchers.hasItem("code_review_expert")));
     }
 }

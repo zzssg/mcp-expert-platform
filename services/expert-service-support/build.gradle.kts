@@ -12,6 +12,7 @@ dependencies {
     implementation(platform(libs.spring.ai.bom))
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.spring.ai.model)
+    implementation("org.springframework:spring-web") // @RestController for the usage endpoint
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation(libs.bundles.test.unit)

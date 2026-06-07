@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Expert Token Usage</title>
+  <style>
+    :root {
+      --bg: #0f1419; --panel: #1a2029; --line: #2a323d; --fg: #e6edf3;
+      --muted: #8b949e; --accent: #58a6ff; --ok: #3fb950; --warn: #d29922; --err: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+           font: 14px/1.5 -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+             padding: 20px 24px; border-bottom: 1px solid var(--line); }
+    h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    .meta { color: var(--muted); font-size: 12px; }
+    .meta a { color: var(--accent); text-decoration: none; }
+    main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+             gap: 12px; margin-bottom: 24px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+    .card .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    .card .value { font-size: 24px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel);
+            border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 14px; text-align: right; border-bottom: 1px solid var(--line);
+             font-variant-numeric: tabular-nums; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { color: var(--muted); font-weight: 600; font-size: 12px;
+               text-transform: uppercase; letter-spacing: .03em; background: #161b22; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #20262f; }
+    .tool { font-weight: 600; color: var(--accent); }
+    .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+    .empty { color: var(--muted); padding: 40px; text-align: center; }
+    .controls { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    button { background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+             border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+    button:hover { border-color: var(--accent); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .dot.stale { background: var(--err); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Expert Token Usage</h1>
+    <span class="meta">
+      <span class="dot" id="status-dot"></span>
+      <span id="updated">connecting…</span>
+      &middot; source <a href="/api/usage">/api/usage</a>
+    </span>
+    <div class="controls">
+      <label class="meta"><input type="checkbox" id="auto" checked/> auto-refresh (5s)</label>
+      <button id="refresh">Refresh now</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="cards" id="cards"></div>
+    <div id="table-wrap"></div>
+  </main>
+
+  <script>
+    const fmt = (n) => (n ?? 0).toLocaleString();
+
+    function card(label, value, cls) {
+      return `<div class="card"><div class="label">${label}</div>
+              <div class="value ${cls || ''}">${value}</div></div>`;
+    }
+
+    function render(report) {
+      const t = report.totals || {};
+      document.getElementById('cards').innerHTML = [
+        card('Total tokens', fmt(t.totalTokens)),
+        card('Input tokens', fmt(t.inputTokens)),
+        card('Output tokens', fmt(t.outputTokens)),
+        card('Calls', fmt(t.calls)),
+        card('Errors', fmt(t.error), t.error > 0 ? 'err' : ''),
+      ].join('');
+
+      const tools = report.tools || [];
+      if (tools.length === 0) {
+        document.getElementById('table-wrap').innerHTML =
+          `<div class="empty">No expert calls recorded yet. Invoke a tool to see usage here.</div>`;
+        return;
+      }
+      const rows = tools.map(r => `
+        <tr>
+          <td class="tool">${r.tool}</td>
+          <td>${fmt(r.calls)}</td>
+          <td class="ok">${fmt(r.ok)}</td>
+          <td class="warn">${fmt(r.partial)}</td>
+          <td>${fmt(r.empty)}</td>
+          <td class="${r.error > 0 ? 'err' : ''}">${fmt(r.error)}</td>
+          <td>${fmt(r.inputTokens)}</td>
+          <td>${fmt(r.outputTokens)}</td>
+          <td><strong>${fmt(r.totalTokens)}</strong></td>
+          <td>${fmt(r.cachedCalls)}</td>
+        </tr>`).join('');
+      document.getElementById('table-wrap').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Expert tool</th><th>Calls</th><th>OK</th><th>Partial</th><th>Empty</th>
+            <th>Error</th><th>Input tok</th><th>Output tok</th><th>Total tok</th><th>Cached</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    async function refresh() {
+      const dot = document.getElementById('status-dot');
+      try {
+        const res = await fetch('/api/usage', { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const report = await res.json();
+        render(report);
+        dot.classList.remove('stale');
+        document.getElementById('updated').textContent =
+          'updated ' + new Date(report.generatedAt).toLocaleTimeString();
+      } catch (e) {
+        dot.classList.add('stale');
+        document.getElementById('updated').textContent = 'error: ' + e.message;
+      }
+    }
+
+    document.getElementById('refresh').addEventListener('click', refresh);
+
+    let timer = null;
+    function schedule() {
+      if (timer) clearInterval(timer);
+      if (document.getElementById('auto').checked) timer = setInterval(refresh, 5000);
+    }
+    document.getElementById('auto').addEventListener('change', schedule);
+
+    refresh();
+    schedule();
+  </script>
+</body>
+</html>

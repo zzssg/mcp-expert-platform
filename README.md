@@ -52,6 +52,16 @@ Configurable per service via `platform.expert.budget` (env-bound): `max-input-to
 `max-output-tokens` (the model's output cap), and `deadline` (per-attempt model-call
 timeout). All three are honored end-to-end.
 
+### Token usage dashboard
+Each service meters the token usage of every expert call (a `MeteredExpert` decorator
+folds each `ExpertResult.usage()` into a thread-safe `UsageMetrics` registry) and exposes:
+- `GET /api/usage` — JSON: per-tool calls, OK/PARTIAL/EMPTY/ERROR counts, input/output/total
+  tokens, cached calls, plus aggregate totals;
+- `GET /usage.html` — a self-contained static dashboard that polls `/api/usage` every 5s.
+
+So `http://localhost:8080/usage.html` (code) and `http://localhost:8081/usage.html`
+(incident) show live token usage by expert tool. Counters are process-lifetime.
+
 ### Local config via `.env`
 Copy `.env.example` to `.env` (git-ignored) and fill in your proxy/model/budget values.
 A `DotEnvEnvironmentPostProcessor` (in `expert-service-support`) loads it at startup as the

@@ -4,7 +4,7 @@ import com.bank.platform.mcp.contract.Budget;
 import com.bank.platform.mcp.contract.ExpertRequest;
 import com.bank.platform.mcp.contract.ExpertResult;
 import com.bank.platform.mcp.contract.Options;
-import com.bank.platform.mcp.expert.stacktrace.StacktraceAnalyzerExpert;
+import com.bank.platform.mcp.engine.Expert;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
@@ -21,10 +21,10 @@ import java.util.UUID;
  */
 public class IncidentExpertTools {
 
-    private final StacktraceAnalyzerExpert stacktraceAnalyzerExpert;
+    private final Expert stacktraceAnalyzerExpert;
     private final Budget budget;
 
-    public IncidentExpertTools(StacktraceAnalyzerExpert stacktraceAnalyzerExpert, Budget budget) {
+    public IncidentExpertTools(Expert stacktraceAnalyzerExpert, Budget budget) {
         this.stacktraceAnalyzerExpert = stacktraceAnalyzerExpert;
         this.budget = budget;
     }

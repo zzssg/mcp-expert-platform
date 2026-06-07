@@ -4,6 +4,8 @@ import com.bank.platform.mcp.engine.GeminiExpertEngine;
 import com.bank.platform.mcp.expert.codereview.CodeReviewExpert;
 import com.bank.platform.mcp.svc.code.tools.CodeExpertTools;
 import com.bank.platform.mcp.svc.support.ExpertPlatformProperties;
+import com.bank.platform.mcp.svc.support.metrics.MeteredExpert;
+import com.bank.platform.mcp.svc.support.metrics.UsageMetrics;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +29,11 @@ public class ExpertPlatformConfig {
 
     @Bean
     public CodeExpertTools codeExpertTools(CodeReviewExpert codeReviewExpert,
-                                           ExpertPlatformProperties properties) {
-        return new CodeExpertTools(codeReviewExpert, properties.getBudget().toContractBudget());
+                                           ExpertPlatformProperties properties,
+                                           UsageMetrics usageMetrics) {
+        // Wrap the expert so every call's token usage is metered (Part 2.9).
+        return new CodeExpertTools(new MeteredExpert(codeReviewExpert, usageMetrics),
+                properties.getBudget().toContractBudget());
     }
 
     /** Registers the code-group experts as MCP tools; the autoconfig publishes them in tools/list. */

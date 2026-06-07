@@ -4,6 +4,8 @@ import com.bank.platform.mcp.engine.GeminiExpertEngine;
 import com.bank.platform.mcp.expert.stacktrace.StacktraceAnalyzerExpert;
 import com.bank.platform.mcp.svc.incident.tools.IncidentExpertTools;
 import com.bank.platform.mcp.svc.support.ExpertPlatformProperties;
+import com.bank.platform.mcp.svc.support.metrics.MeteredExpert;
+import com.bank.platform.mcp.svc.support.metrics.UsageMetrics;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +29,11 @@ public class IncidentExpertConfig {
 
     @Bean
     public IncidentExpertTools incidentExpertTools(StacktraceAnalyzerExpert stacktraceAnalyzerExpert,
-                                                   ExpertPlatformProperties properties) {
-        return new IncidentExpertTools(stacktraceAnalyzerExpert, properties.getBudget().toContractBudget());
+                                                   ExpertPlatformProperties properties,
+                                                   UsageMetrics usageMetrics) {
+        // Wrap the expert so every call's token usage is metered (Part 2.9).
+        return new IncidentExpertTools(new MeteredExpert(stacktraceAnalyzerExpert, usageMetrics),
+                properties.getBudget().toContractBudget());
     }
 
     /** Registers the incident-group experts as MCP tools; the autoconfig publishes them in tools/list. */

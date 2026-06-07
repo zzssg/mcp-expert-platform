@@ -4,7 +4,7 @@ import com.bank.platform.mcp.contract.Budget;
 import com.bank.platform.mcp.contract.ExpertRequest;
 import com.bank.platform.mcp.contract.ExpertResult;
 import com.bank.platform.mcp.contract.Options;
-import com.bank.platform.mcp.expert.codereview.CodeReviewExpert;
+import com.bank.platform.mcp.engine.Expert;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
@@ -22,10 +22,10 @@ import java.util.UUID;
  */
 public class CodeExpertTools {
 
-    private final CodeReviewExpert codeReviewExpert;
+    private final Expert codeReviewExpert;
     private final Budget budget;
 
-    public CodeExpertTools(CodeReviewExpert codeReviewExpert, Budget budget) {
+    public CodeExpertTools(Expert codeReviewExpert, Budget budget) {
         this.codeReviewExpert = codeReviewExpert;
         this.budget = budget;
     }

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "stacktrace_analyzer task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stackTrace"],
+  "properties": {
+    "stackTrace": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Raw Java stack trace: top exception plus its Caused by chain."
+    },
+    "applicationPackages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Package prefixes marking application frames, e.g. com.bank. Improves root-frame accuracy."
+    },
+    "sourceContext": {
+      "type": "array",
+      "description": "Optional source files referenced by the trace, to resolve file:line citations.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "content"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "content": { "type": "string" }
+        }
+      }
+    }
+  }
+}

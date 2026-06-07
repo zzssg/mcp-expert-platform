@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "code_review_expert output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findings"],
+  "properties": {
+    "overallConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "summary": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "riskLevel": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+            "blocking": { "type": "boolean" },
+            "fileCount": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "positiveNotes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "severity", "title", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "category": {
+            "type": "string",
+            "enum": ["bug", "concurrency", "resource", "security", "smell", "maintainability"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+          },
+          "epistemic": {
+            "type": "string",
+            "enum": ["FACT", "INFERENCE", "HYPOTHESIS", "UNKNOWN"]
+          },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string" },
+          "recommendation": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "ref"],
+              "properties": {
+                "type": { "type": "string", "enum": ["diff", "file", "symbol", "feed"] },
+                "ref": { "type": "string", "minLength": 1 },
+                "quote": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

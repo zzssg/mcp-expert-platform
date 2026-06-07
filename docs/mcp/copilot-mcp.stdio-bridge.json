@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "code-experts": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8080/sse"]
+    },
+    "incident-experts": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8081/sse"]
+    }
+  }
+}

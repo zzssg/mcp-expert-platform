@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: expert-svc-code
+  ai:
+    mcp:
+      server:
+        name: expert-svc-code
+        version: 1.0.0
+        instructions: >-
+          Gemini-powered expert tools for code review and Java stack-trace root-cause
+          analysis. Every finding carries evidence, an epistemic label, and a confidence.
+
+# Model selection: swap model-id to migrate Gemini 2.5 -> 3.x (Part 5.10). The platform
+# reaches Gemini through the Vertex REST proxy below (one governed egress); when its
+# base-url is unset the server still boots and serves its catalog, returning ERROR on calls.
+platform:
+  expert:
+    model-id: ${GEMINI_MODEL_ID:gemini-2.5-pro}
+    vertex:
+      base-url: ${VERTEX_BASE_URL:}        # e.g. https://llm-proxy.bank.internal
+      project: ${VERTEX_PROJECT:}
+      location: ${VERTEX_LOCATION:us-central1}
+      token: ${VERTEX_TOKEN:}              # static Bearer token; rotate out-of-band
+      request-timeout: ${VERTEX_REQUEST_TIMEOUT:60s}
+    # Token + latency budget (Part 3.1 / 5.5):
+    #   max-input-tokens  -> prompt context reduction (diff kept, off-hunk context trimmed)
+    #   max-output-tokens -> the model's output cap
+    #   deadline          -> per-attempt model-call timeout
+    budget:
+      max-input-tokens:  ${EXPERT_MAX_INPUT_TOKENS:60000}
+      max-output-tokens: ${EXPERT_MAX_OUTPUT_TOKENS:8000}
+      deadline:          ${EXPERT_DEADLINE:30s}
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info

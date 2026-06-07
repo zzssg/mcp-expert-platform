@@ -1,0 +1,11 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+.idea/
+*.iml
+
+# Local environment config (secrets, proxy URLs). Loaded at startup by
+# DotEnvEnvironmentPostProcessor. The committed .env.example is the template.
+.env
+!.env.example

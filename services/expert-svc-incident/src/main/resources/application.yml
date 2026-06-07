@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: expert-svc-incident
+  ai:
+    mcp:
+      server:
+        name: expert-svc-incident
+        version: 1.0.0
+        instructions: >-
+          Gemini-powered incident-time experts. stacktrace_analyzer finds the true root
+          cause of a Java exception, anchored on the application root frame and decoded
+          FACT signals. Every finding carries evidence, an epistemic label, and confidence.
+
+# Reaches Gemini through the shared Vertex REST proxy egress (Part 5.10 / 9 R1).
+# Swap model-id to migrate 2.5 -> 3.x. With base-url unset the server still boots and
+# serves its catalog, returning ERROR on calls.
+platform:
+  expert:
+    model-id: ${GEMINI_MODEL_ID:gemini-2.5-pro}
+    vertex:
+      base-url: ${VERTEX_BASE_URL:}        # e.g. https://llm-proxy.bank.internal
+      project: ${VERTEX_PROJECT:}
+      location: ${VERTEX_LOCATION:us-central1}
+      token: ${VERTEX_TOKEN:}              # static Bearer token; rotate out-of-band
+      request-timeout: ${VERTEX_REQUEST_TIMEOUT:60s}
+    # Token + latency budget (Part 3.1 / 5.5):
+    #   max-input-tokens  -> prompt context reduction (trace digest is small here)
+    #   max-output-tokens -> the model's output cap
+    #   deadline          -> per-attempt model-call timeout
+    budget:
+      max-input-tokens:  ${EXPERT_MAX_INPUT_TOKENS:60000}
+      max-output-tokens: ${EXPERT_MAX_OUTPUT_TOKENS:8000}
+      deadline:          ${EXPERT_DEADLINE:30s}
+
+# Incident tools are bursty + large-input; give the server its own port.
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
